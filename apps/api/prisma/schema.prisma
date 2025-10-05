@@ -15,19 +15,34 @@ datasource db {
 
 model User {
   id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
   email     String   @unique
   password  String
+
+  role      Role     @default(CLIENT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("user")
 }
 
 model Todo {
   id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
   title     String
   description String
   status      Status @default(IN_PROGRESS)
+
+  userId    String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("todo")
+}
+
+enum Role {
+  ADMIN
+  CLIENT
 }
 
 enum Status {
