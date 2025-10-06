@@ -54,13 +54,9 @@ export function LoginForm({
 
 	async function handleSubmitForm(data: LoginFormData) {
 		try {
-			const response = await login(data);
-			if (response.ok) {
-				toast.success("Login successful");
-				router.push("/app");
-			} else {
-				toast.error("Login failed");
-			}
+			await login(data);
+			toast.success("Login successful");
+			router.push("/app");
 		} catch (error) {
 			toast.error("Login failed");
 			console.error("Error logging in:", error);

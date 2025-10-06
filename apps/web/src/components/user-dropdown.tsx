@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { LogOutIcon, UserRound } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -15,7 +16,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import router from "next/router";
 import { logout } from "@/app/actions/logout";
 import { useQuery } from "@tanstack/react-query";
 import { profile } from "@/app/actions/user";
@@ -34,7 +34,7 @@ const getInitials = (name: string) => {
 
 export function UserDropdown() {
 	const [open, setOpen] = React.useState(true);
-
+	const router = useRouter();
 	const { data: user } = useQuery<User>({
 		queryKey: ["profile"],
 		queryFn: async () => await profile(),
