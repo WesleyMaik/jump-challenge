@@ -17,7 +17,6 @@ import {
 	ListItems,
 	ListProvider,
 } from "@/components/ui/list";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,12 +29,12 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import { Field, FieldLabel } from "./ui/field";
+import { Field, FieldError, FieldLabel } from "./ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "./ui/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Status, CreateTodo } from "@/types/todo";
-import { Frown, Kanban, List } from "lucide-react";
+import { Frown, Kanban, List, Pencil } from "lucide-react";
 import { getAllTodos, createTodo, updateTodo } from "@/app/actions/todos";
 import { Skeleton } from "./ui/skeleton";
 import {
@@ -45,6 +44,10 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "./ui/empty";
+import { useForm } from "react-hook-form";
+import { TodoFormData } from "@/lib/definitions/todo";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { TodoFormSchema } from "@/lib/definitions/todo";
 
 const statusToColumn = {
 	PENDING: "Planned",
@@ -107,6 +110,7 @@ export function TodoList() {
 							variant={!isList ? "default" : "outline"}
 							size="sm"
 							onClick={handleIsKanban}
+							className="cursor-pointer"
 						>
 							<Kanban className="h-4 w-4" />
 							Kanban
@@ -115,6 +119,7 @@ export function TodoList() {
 							variant={isList ? "default" : "outline"}
 							size="sm"
 							onClick={handleIsList}
+							className="cursor-pointer"
 						>
 							<List className="h-4 w-4" />
 							List
@@ -147,71 +152,58 @@ export function TodoList() {
 }
 
 function AddTodoForm() {
-	const [title, setTitle] = useState("");
-	const [description, setDescription] = useState("");
-	const [status, setStatus] = useState<Status>("PENDING");
+	const {
+		register,
+		handleSubmit,
+		reset,
+		formState: { errors, isValid },
+	} = useForm<TodoFormData>({
+		resolver: zodResolver(TodoFormSchema),
+	});
 	const queryClient = useQueryClient();
 
 	const { mutate: addTodo, isPending } = useMutation({
 		mutationFn: (newTodo: CreateTodo) => createTodo(newTodo),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["todos"] });
-			setTitle("");
-			setDescription("");
-			setStatus("PENDING");
+			reset();
 		},
 	});
 
-	const handleSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
-		if (title.trim()) {
-			addTodo({
-				title: title.trim(),
-				description: description.trim(),
-				status,
-			});
+	const handleSubmitForm = ({ title, description }: TodoFormData) => {
+		if (!title.trim()) {
+			return;
 		}
+
+		addTodo({
+			title: title.trim(),
+			description: description.trim(),
+		});
 	};
 
 	return (
-		<form onSubmit={handleSubmit} className="space-y-4">
+		<form onSubmit={handleSubmit(handleSubmitForm)} className="space-y-4">
 			<Field>
 				<FieldLabel>Title</FieldLabel>
-				<Input
-					value={title}
-					onChange={(e) => setTitle(e.target.value)}
-					placeholder="Enter todo title"
-					required
-				/>
+				<Input {...register("title")} placeholder="Enter todo title" required />
+				<FieldError>{errors.title?.message}</FieldError>
 			</Field>
 			<Field>
 				<FieldLabel>Description</FieldLabel>
 				<Textarea
-					value={description}
-					onChange={(e) => setDescription(e.target.value)}
+					{...register("description")}
 					placeholder="Enter todo description"
 				/>
-			</Field>
-			<Field>
-				<FieldLabel>Status</FieldLabel>
-				<select
-					value={status}
-					onChange={(e) => setStatus(e.target.value as Status)}
-					className="w-full p-2 border rounded"
-				>
-					<option value="PENDING">Pending</option>
-					<option value="IN_PROGRESS">In Progress</option>
-					<option value="DONE">Done</option>
-				</select>
+				<FieldError>{errors.description?.message}</FieldError>
 			</Field>
 			<DialogFooter>
-				<DialogClose asChild>
+				<DialogClose asChild className="cursor-pointer">
 					<Button type="button" variant="outline">
 						Cancel
 					</Button>
 				</DialogClose>
-				<DialogClose asChild>
-					<Button type="submit" disabled={isPending || !title.trim()}>
+				<DialogClose asChild className="cursor-pointer">
+					<Button type="submit" disabled={!isValid}>
 						{isPending ? "Adding..." : "Add Todo"}
 					</Button>
 				</DialogClose>
@@ -256,6 +248,12 @@ function TodoItems({ isList }: TodoListProps) {
 
 	const handleDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
+
+		console.log({
+			active,
+			over,
+		});
+
 		if (!over) {
 			return;
 		}
@@ -264,6 +262,14 @@ function TodoItems({ isList }: TodoListProps) {
 		if (!newStatus) {
 			return;
 		}
+
+		const currentTodo = features.find((feature) => feature.id === active.id);
+		const currentStatus = currentTodo?.originalTodo?.status;
+
+		if (newStatus === currentStatus) {
+			return;
+		}
+
 		updateTodoStatus({ id: active.id as string, status: newStatus });
 	};
 
@@ -300,35 +306,44 @@ function TodoItems({ isList }: TodoListProps) {
 				{columns.map((status) => (
 					<ListGroup id={status.name} key={status.name}>
 						<ListHeader color={status.color} name={status.name} />
-						<ListItems>
-							{features
-								.filter((feature) => feature.status.name === status.name)
-								.map((feature, index) => (
-									<ListItem
-										id={feature.id}
-										index={index}
-										key={feature.id}
-										name={feature.name}
-										parent={feature.status.name}
-									>
-										<div
-											className="h-2 w-2 shrink-0 rounded-full"
-											style={{ backgroundColor: feature.status.color }}
-										/>
-										<p className="m-0 flex-1 font-medium text-sm">
-											{feature.name}
-										</p>
-										{feature.owner && (
-											<Avatar className="h-4 w-4 shrink-0">
-												<AvatarImage src={feature.owner.image} />
-												<AvatarFallback>
-													{feature.owner.name?.slice(0, 2)}
-												</AvatarFallback>
-											</Avatar>
-										)}
-									</ListItem>
-								))}
-						</ListItems>
+						{features.filter((feature) => feature.status.name === status.name)
+							.length ? (
+							<ListItems>
+								{features
+									.filter((feature) => feature.status.name === status.name)
+									.map((feature, index) => (
+										<ListItem
+											id={feature.id}
+											index={index}
+											key={feature.id}
+											name={feature.name}
+											parent={feature.status.name}
+										>
+											<div
+												className="h-2 w-2 shrink-0 rounded-full"
+												style={{ backgroundColor: feature.status.color }}
+											/>
+											<div className="w-full flex flex-col">
+												<div className="w-full flex gap-2 items-center justify-between">
+													<h2 className="m-0 flex-1 font-medium text-sm">
+														{feature.name}
+													</h2>
+													<button className="cursor-pointer text-foreground bg-transparent hover:bg-accent/50">
+														<Pencil size={14} />
+													</button>
+												</div>
+												<p className="m-0 text-muted-foreground text-xs">
+													{feature.description.slice(0, 100)}...
+												</p>
+											</div>
+										</ListItem>
+									))}
+							</ListItems>
+						) : (
+							<p className="p-4 text-sm text-muted-foreground">
+								No task added here.
+							</p>
+						)}
 					</ListGroup>
 				))}
 			</ListProvider>
@@ -357,19 +372,17 @@ function TodoItems({ isList }: TodoListProps) {
 								name={feature.name}
 							>
 								<div className="flex items-start justify-between gap-2">
-									<div className="flex flex-col gap-1">
+									<div className="w-full flex flex-row gap-2 justify-between">
 										<p className="m-0 flex-1 font-medium text-sm">
 											{feature.name}
 										</p>
+										<Button
+											variant="link"
+											className="cursor-pointer text-foreground bg-transparent hover:bg-accent/50"
+										>
+											<Pencil size={12} />
+										</Button>
 									</div>
-									{feature.owner && (
-										<Avatar className="h-4 w-4 shrink-0">
-											<AvatarImage src={feature.owner.image} />
-											<AvatarFallback>
-												{feature.owner.name?.slice(0, 2)}
-											</AvatarFallback>
-										</Avatar>
-									)}
 								</div>
 								{feature.description && (
 									<p className="m-0 text-muted-foreground text-xs mb-2">
