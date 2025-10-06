@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { faker } from "@faker-js/faker";
 import {
 	DragEndEvent,
@@ -16,18 +17,51 @@ import {
 	ListItems,
 	ListProvider,
 } from "@/components/ui/list";
-import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ButtonGroup } from "./ui/button-group";
-import { Button } from "./ui/button";
-import { cn } from "@/lib/utils";
+import { ButtonGroup } from "@/components/ui/button-group";
+import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
+import { Field, FieldLabel } from "./ui/field";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "./ui/textarea";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Status, CreateTodo } from "@/app/types/todo";
+import { Frown, Kanban, List } from "lucide-react";
+import { getAllTodos, createTodo, updateTodo } from "@/app/actions/todos";
+import { Skeleton } from "./ui/skeleton";
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "./ui/empty";
 
-const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+const statusToColumn = {
+	PENDING: "Planned",
+	IN_PROGRESS: "In Progress",
+	DONE: "Done",
+} as const;
+
+const columnToStatus = {
+	Planned: "PENDING",
+	"In Progress": "IN_PROGRESS",
+	Done: "DONE",
+} as const;
 
 const columns = [
-	{ id: faker.string.uuid(), name: "Planned", color: "#6B7280" },
-	{ id: faker.string.uuid(), name: "In Progress", color: "#F59E0B" },
-	{ id: faker.string.uuid(), name: "Done", color: "#10B981" },
+	{ id: "Planned", name: "Planned", color: "#6B7280" },
+	{ id: "In Progress", name: "In Progress", color: "#F59E0B" },
+	{ id: "Done", name: "Done", color: "#10B981" },
 ];
 
 const users = Array.from({ length: 4 })
@@ -37,21 +71,6 @@ const users = Array.from({ length: 4 })
 		name: faker.person.fullName(),
 		image: faker.image.avatar(),
 	}));
-
-const exampleFeatures = Array.from({ length: 20 })
-	.fill(null)
-	.map(() => {
-		const status = faker.helpers.arrayElement(columns);
-		return {
-			id: faker.string.uuid(),
-			name: capitalize(faker.company.buzzPhrase()),
-			startAt: faker.date.past({ years: 0.5, refDate: new Date() }),
-			endAt: faker.date.future({ years: 0.5, refDate: new Date() }),
-			column: status.id,
-			status: status,
-			owner: faker.helpers.arrayElement(users),
-		};
-	});
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
 	month: "short",
@@ -82,54 +101,198 @@ export function TodoList() {
 	return (
 		<div className="flex flex-col gap-2 w-full">
 			<div className="flex gap-4 justify-between">
-				<ButtonGroup className="cursor-pointer">
-					<Button
-						variant="outline"
-						className={cn("cursor-pointer", !isList ? "bg-accent" : "")}
-						onClick={handleIsKanban}
-					>
-						Kanban
-					</Button>
-					<Button
-						variant="outline"
-						className={cn("cursor-pointer", isList ? "bg-accent" : "")}
-						onClick={handleIsList}
-					>
-						List
-					</Button>
-				</ButtonGroup>
-				<Button className="bg-blue-500 hover:bg-blue-400 text-white cursor-pointer">
-					Add Feature
-				</Button>
+				<div className="flex gap-2">
+					<ButtonGroup>
+						<Button
+							variant={!isList ? "default" : "outline"}
+							size="sm"
+							onClick={handleIsKanban}
+						>
+							<Kanban className="h-4 w-4" />
+							Kanban
+						</Button>
+						<Button
+							variant={isList ? "default" : "outline"}
+							size="sm"
+							onClick={handleIsList}
+						>
+							<List className="h-4 w-4" />
+							List
+						</Button>
+					</ButtonGroup>
+				</div>
+				<Dialog>
+					<DialogTrigger asChild>
+						<Button
+							className="cursor-pointer bg-blue-500 hover:bg-blue-400 text-white"
+							size="sm"
+						>
+							Add Todo
+						</Button>
+					</DialogTrigger>
+					<DialogContent>
+						<DialogHeader>
+							<DialogTitle>Add New Todo</DialogTitle>
+							<DialogDescription>
+								Create a new todo item to track your tasks.
+							</DialogDescription>
+						</DialogHeader>
+						<AddTodoForm />
+					</DialogContent>
+				</Dialog>
 			</div>
-			<div className="w-full">
-				<TodoItems isList={isList} />
-			</div>
+			<TodoItems isList={isList} />
 		</div>
 	);
 }
 
+function AddTodoForm() {
+	const [title, setTitle] = useState("");
+	const [description, setDescription] = useState("");
+	const [status, setStatus] = useState<Status>("PENDING");
+	const queryClient = useQueryClient();
+
+	const { mutate: addTodo, isPending } = useMutation({
+		mutationFn: (newTodo: CreateTodo) => createTodo(newTodo),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["todos"] });
+			setTitle("");
+			setDescription("");
+			setStatus("PENDING");
+		},
+	});
+
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		if (title.trim()) {
+			addTodo({
+				title: title.trim(),
+				description: description.trim(),
+				status,
+			});
+		}
+	};
+
+	return (
+		<form onSubmit={handleSubmit} className="space-y-4">
+			<Field>
+				<FieldLabel>Title</FieldLabel>
+				<Input
+					value={title}
+					onChange={(e) => setTitle(e.target.value)}
+					placeholder="Enter todo title"
+					required
+				/>
+			</Field>
+			<Field>
+				<FieldLabel>Description</FieldLabel>
+				<Textarea
+					value={description}
+					onChange={(e) => setDescription(e.target.value)}
+					placeholder="Enter todo description"
+				/>
+			</Field>
+			<Field>
+				<FieldLabel>Status</FieldLabel>
+				<select
+					value={status}
+					onChange={(e) => setStatus(e.target.value as Status)}
+					className="w-full p-2 border rounded"
+				>
+					<option value="PENDING">Pending</option>
+					<option value="IN_PROGRESS">In Progress</option>
+					<option value="DONE">Done</option>
+				</select>
+			</Field>
+			<DialogFooter>
+				<DialogClose asChild>
+					<Button type="button" variant="outline">
+						Cancel
+					</Button>
+				</DialogClose>
+				<DialogClose asChild>
+					<Button type="submit" disabled={isPending || !title.trim()}>
+						{isPending ? "Adding..." : "Add Todo"}
+					</Button>
+				</DialogClose>
+			</DialogFooter>
+		</form>
+	);
+}
+
 function TodoItems({ isList }: TodoListProps) {
-	const [features, setFeatures] = useState(exampleFeatures);
+	const queryClient = useQueryClient();
+
+	const { data: todos = [], isLoading } = useQuery({
+		queryKey: ["todos"],
+		queryFn: getAllTodos,
+	});
+
+	const { mutate: updateTodoStatus } = useMutation({
+		mutationFn: ({ id, status }: { id: string; status: Status }) =>
+			updateTodo(id, { status }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["todos"] });
+		},
+	});
+
+	const features = todos.map((todo) => ({
+		id: todo.id,
+		name: todo.title,
+		startAt: new Date(todo.createdAt),
+		endAt: new Date(todo.updatedAt),
+		column: statusToColumn[todo.status],
+		status: {
+			id: statusToColumn[todo.status],
+			name: statusToColumn[todo.status],
+			color:
+				columns.find((col) => col.name === statusToColumn[todo.status])
+					?.color || "#6B7280",
+		},
+		owner: faker.helpers.arrayElement(users),
+		description: todo.description,
+		originalTodo: todo,
+	}));
 
 	const handleDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
 		if (!over) {
 			return;
 		}
-		const status = columns.find((status) => status.name === over.id);
-		if (!status) {
+		const columnName = over.id as string;
+		const newStatus = columnToStatus[columnName as keyof typeof columnToStatus];
+		if (!newStatus) {
 			return;
 		}
-		setFeatures(
-			features.map((feature) => {
-				if (feature.id === active.id) {
-					return { ...feature, status, column: status.id };
-				}
-				return feature;
-			})
-		);
+		updateTodoStatus({ id: active.id as string, status: newStatus });
 	};
+
+	if (isLoading) {
+		return (
+			<div className="flex justify-center p-8 gap-4">
+				{Array.from({ length: 3 }).map((_, index) => (
+					<Skeleton key={index} className="bg-muted w-[30rem] h-[40rem]" />
+				))}
+			</div>
+		);
+	}
+
+	if (todos.length === 0) {
+		return (
+			<Empty>
+				<EmptyHeader>
+					<EmptyMedia variant="icon">
+						<Frown />
+					</EmptyMedia>
+					<EmptyTitle>No To-Dos yet</EmptyTitle>
+					<EmptyDescription>
+						You haven&apos;t created any todos yet. Get started by creating your
+						first todo.
+					</EmptyDescription>
+				</EmptyHeader>
+			</Empty>
+		);
+	}
 
 	if (isList) {
 		return (
@@ -173,11 +336,7 @@ function TodoItems({ isList }: TodoListProps) {
 	}
 
 	return (
-		<KanbanProvider
-			columns={columns}
-			data={features}
-			onDataChange={setFeatures}
-		>
+		<KanbanProvider columns={columns} data={features} onDragEnd={handleDragEnd}>
 			{(column) => (
 				<KanbanBoard id={column.id} key={column.id}>
 					<KanbanHeader>
@@ -212,6 +371,11 @@ function TodoItems({ isList }: TodoListProps) {
 										</Avatar>
 									)}
 								</div>
+								{feature.description && (
+									<p className="m-0 text-muted-foreground text-xs mb-2">
+										{feature.description}
+									</p>
+								)}
 								<p className="m-0 text-muted-foreground text-xs">
 									{shortDateFormatter.format(feature.startAt)} -{" "}
 									{dateFormatter.format(feature.endAt)}
