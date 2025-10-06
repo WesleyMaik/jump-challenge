@@ -31,6 +31,7 @@ import { useState } from "react";
 import Logo from "@assets/jump.svg";
 import { login } from "@/app/actions/auth";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function LoginForm({
 	className,
@@ -52,15 +53,16 @@ export function LoginForm({
 	});
 
 	async function handleSubmitForm(data: LoginFormData) {
-		console.log(data);
 		try {
 			const response = await login(data);
 			if (response.ok) {
+				toast.success("Login successful");
 				router.push("/app");
 			} else {
-				console.error("Login failed");
+				toast.error("Login failed");
 			}
 		} catch (error) {
+			toast.error("Login failed");
 			console.error("Error logging in:", error);
 		}
 	}

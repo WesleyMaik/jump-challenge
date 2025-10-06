@@ -34,7 +34,7 @@ import { Field, FieldLabel } from "./ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "./ui/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Status, CreateTodo } from "@/app/types/todo";
+import { Status, CreateTodo } from "@/types/todo";
 import { Frown, Kanban, List } from "lucide-react";
 import { getAllTodos, createTodo, updateTodo } from "@/app/actions/todos";
 import { Skeleton } from "./ui/skeleton";

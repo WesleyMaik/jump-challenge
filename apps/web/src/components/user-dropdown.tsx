@@ -1,18 +1,9 @@
 "use client";
 
 import React from "react";
-import {
-	BadgeCheckIcon,
-	BellIcon,
-	ChevronDown,
-	CreditCardIcon,
-	LogOutIcon,
-	SparklesIcon,
-	User2,
-	UserIcon,
-} from "lucide-react";
+import { LogOutIcon, UserRound } from "lucide-react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -23,27 +14,47 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import router from "next/router";
+import { logout } from "@/app/actions/logout";
+import { useQuery } from "@tanstack/react-query";
+import { profile } from "@/app/actions/user";
+import { User } from "@/types/user";
 
-const user = {
-	name: "Toby Belhome",
-	email: "contact@bundui.io",
-	avatar: "https://bundui-images.netlify.app/avatars/01.png",
+const getInitials = (name: string) => {
+	if (!name) return "";
+	const words = name.trim().split(/\s+/);
+
+	if (words.length === 1) {
+		return words?.[0]?.charAt(0).toUpperCase() || "";
+	}
+
+	return (words?.[0]?.charAt(0) || "") + (words?.[1]?.charAt(0) || "");
 };
 
 export function UserDropdown() {
 	const [open, setOpen] = React.useState(true);
+
+	const { data: user } = useQuery<User>({
+		queryKey: ["profile"],
+		queryFn: async () => await profile(),
+	});
+
+	function handleLogout() {
+		toast.success("Logout successful");
+		router.push("/login");
+	}
 
 	return (
 		<DropdownMenu open={open} onOpenChange={setOpen}>
 			<DropdownMenuTrigger asChild className="cursor-pointer">
 				<Button
 					variant="outline"
-					className="gap-2 px-2 bg-sidebar/50 shadow-none border-none"
+					className="gap-2 px-2 bg-sidebar/50 shadow-none border-none rounded-full"
 				>
 					<Avatar className="size-8 rounded-lg">
-						<AvatarImage src={user.avatar} alt={user.name} />
-						<AvatarFallback className="rounded-lg">
-							<UserIcon color="black" />
+						<AvatarFallback className="rounded-lg bg-accent">
+							{getInitials(user?.name || "")}
 						</AvatarFallback>
 					</Avatar>
 				</Button>
@@ -55,15 +66,14 @@ export function UserDropdown() {
 				<DropdownMenuLabel className="p-0 font-normal">
 					<div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
 						<Avatar className="size-8 rounded-lg">
-							<AvatarImage src={user.avatar} alt={user.name} />
 							<AvatarFallback className="rounded-lg">
-								<UserIcon />
+								{getInitials(user?.name || "")}
 							</AvatarFallback>
 						</Avatar>
 						<div className="grid flex-1 text-left text-sm leading-tight">
-							<span className="truncate font-semibold">{user.name}</span>
+							<span className="truncate font-semibold">{user?.name}</span>
 							<span className="text-muted-foreground truncate text-xs">
-								{user.email}
+								{user?.email}
 							</span>
 						</div>
 					</div>
@@ -71,15 +81,23 @@ export function UserDropdown() {
 				<DropdownMenuSeparator />
 				<DropdownMenuGroup>
 					<DropdownMenuItem className="cursor-pointer">
-						<User2 />
+						<UserRound />
 						Account
 					</DropdownMenuItem>
 				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
-				<DropdownMenuItem className="cursor-pointer text-red-600! hover:bg-red-100!">
-					<LogOutIcon className="text-red-600!" />
-					Log out
-				</DropdownMenuItem>
+				<form action={logout} className="w-full">
+					<DropdownMenuItem
+						className="cursor-pointer text-red-600! hover:bg-red-100!"
+						onClick={handleLogout}
+						asChild
+					>
+						<button type="submit" className="w-full">
+							<LogOutIcon className="text-red-600!" />
+							Log out
+						</button>
+					</DropdownMenuItem>
+				</form>
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);

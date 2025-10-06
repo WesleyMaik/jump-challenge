@@ -1,5 +1,5 @@
 // actions/todos
-import { Todo, CreateTodo, UpdateTodo } from "@/app/types/todo";
+import { Todo, CreateTodo, UpdateTodo } from "@/types/todo";
 import { api } from "@/lib/api";
 
 export async function getAllTodos(): Promise<Todo[]> {
@@ -10,32 +10,23 @@ export async function getAllTodos(): Promise<Todo[]> {
 		},
 	});
 
-	if (!response.ok) {
-		throw new Error(`Failed to fetch todos: ${response.statusText}`);
-	}
-
-	return response.json();
+	return response;
 }
 
-// Get todo by ID
 export async function getTodoById(id: string): Promise<Todo> {
-	const response = await fetch(`/todos/${id}`, {
+	const response = await api<Todo>(`/todos/${id}`, {
 		method: "GET",
 		headers: {
 			"Content-Type": "application/json",
 		},
 	});
 
-	if (!response.ok) {
-		throw new Error(`Failed to fetch todo: ${response.statusText}`);
-	}
-
-	return response.json();
+	return response;
 }
 
 // Create new todo
 export async function createTodo(todo: CreateTodo): Promise<Todo> {
-	const response = await api("/todos", {
+	const response = await api<Todo>("/todos", {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -43,16 +34,12 @@ export async function createTodo(todo: CreateTodo): Promise<Todo> {
 		body: JSON.stringify(todo),
 	});
 
-	if (!response.ok) {
-		throw new Error(`Failed to create todo: ${response.statusText}`);
-	}
-
-	return response.json();
+	return response;
 }
 
 // Update todo
 export async function updateTodo(id: string, todo: UpdateTodo): Promise<Todo> {
-	const response = await api(`/todos/${id}`, {
+	const response = await api<Todo>(`/todos/${id}`, {
 		method: "PATCH",
 		headers: {
 			"Content-Type": "application/json",
@@ -60,11 +47,7 @@ export async function updateTodo(id: string, todo: UpdateTodo): Promise<Todo> {
 		body: JSON.stringify(todo),
 	});
 
-	if (!response.ok) {
-		throw new Error(`Failed to update todo: ${response.statusText}`);
-	}
-
-	return response.json();
+	return response;
 }
 
 // Delete todo

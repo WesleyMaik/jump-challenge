@@ -37,8 +37,7 @@ export class UsersController {
   }
 
   @Get('/me')
-  @UseGuards(JwtAuthGuard, OwnerOrAdminGuard)
-  @ResourceOwner('id')
+  @UseGuards(JwtAuthGuard)
   async getMe(@CurrentUser() user: CurrentUserData) {
     return await this.usersService.getById(user.id);
   }
