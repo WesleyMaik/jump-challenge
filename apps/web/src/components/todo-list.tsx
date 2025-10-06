@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { faker } from "@faker-js/faker";
 import {
 	DragEndEvent,
 	KanbanBoard,
@@ -33,7 +32,7 @@ import { Field, FieldError, FieldLabel } from "./ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "./ui/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Status, CreateTodo } from "@/types/todo";
+import { Status, CreateTodo, Todo, UpdateTodo } from "@/types/todo";
 import { Frown, Kanban, List, Pencil } from "lucide-react";
 import { getAllTodos, createTodo, updateTodo } from "@/app/actions/todos";
 import { Skeleton } from "./ui/skeleton";
@@ -44,10 +43,17 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "./ui/empty";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { TodoFormData } from "@/lib/definitions/todo";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { TodoFormSchema } from "@/lib/definitions/todo";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "./ui/select";
 
 const statusToColumn = {
 	PENDING: "Planned",
@@ -66,14 +72,6 @@ const columns = [
 	{ id: "In Progress", name: "In Progress", color: "#F59E0B" },
 	{ id: "Done", name: "Done", color: "#10B981" },
 ];
-
-const users = Array.from({ length: 4 })
-	.fill(null)
-	.map(() => ({
-		id: faker.string.uuid(),
-		name: faker.person.fullName(),
-		image: faker.image.avatar(),
-	}));
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
 	month: "short",
@@ -212,6 +210,111 @@ function AddTodoForm() {
 	);
 }
 
+type EditTodoFormProps = {
+	todo: Todo;
+	onClose?: () => void;
+};
+
+function EditTodoForm({ todo, onClose }: EditTodoFormProps) {
+	const {
+		control,
+		register,
+		handleSubmit,
+		reset,
+		formState: { errors, isValid },
+	} = useForm<TodoFormData>({
+		resolver: zodResolver(TodoFormSchema),
+		defaultValues: {
+			title: todo.title,
+			description: todo.description,
+			status: todo.status,
+		},
+	});
+	const queryClient = useQueryClient();
+
+	const { mutate: editTodo, isPending } = useMutation({
+		mutationFn: (updatedTodo: UpdateTodo) => updateTodo(todo.id, updatedTodo),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["todos"] });
+			reset();
+			onClose?.();
+		},
+	});
+
+	const handleSubmitForm = ({ title, description, status }: TodoFormData) => {
+		if (!title.trim()) {
+			return;
+		}
+
+		editTodo({
+			title: title.trim(),
+			description: description.trim(),
+			status: status,
+		});
+	};
+
+	return (
+		<form onSubmit={handleSubmit(handleSubmitForm)} className="space-y-4">
+			<Field>
+				<FieldLabel>Title</FieldLabel>
+				<Input {...register("title")} placeholder="Enter todo title" required />
+				<FieldError>{errors.title?.message}</FieldError>
+			</Field>
+			<Field>
+				<FieldLabel>Description</FieldLabel>
+				<Textarea
+					{...register("description")}
+					placeholder="Enter todo description"
+				/>
+				<FieldError>{errors.description?.message}</FieldError>
+			</Field>
+			<Field>
+				<FieldLabel>Status</FieldLabel>
+				<Controller
+					name="status"
+					control={control}
+					defaultValue={todo.status}
+					render={({ field }) => (
+						<Select value={field.value} onValueChange={field.onChange}>
+							<SelectTrigger className="w-[180px]">
+								<SelectValue placeholder="Status" />
+							</SelectTrigger>
+							<SelectContent>
+								{columns.map((col) => (
+									<SelectItem
+										key={col.id}
+										value={
+											columnToStatus[col.id as keyof typeof columnToStatus]
+										}
+									>
+										<div
+											className="w-2 h-2 rounded-full"
+											style={{ backgroundColor: col.color }}
+										/>
+										{col.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					)}
+				/>
+			</Field>
+			<DialogFooter>
+				<DialogClose asChild className="cursor-pointer">
+					<Button type="button" variant="outline">
+						Cancel
+					</Button>
+				</DialogClose>
+				<DialogClose asChild className="cursor-pointer">
+					<Button type="submit" disabled={!isValid}>
+						{isPending ? "Updating..." : "Update Todo"}
+					</Button>
+				</DialogClose>
+			</DialogFooter>
+		</form>
+	);
+}
+
 function TodoItems({ isList }: TodoListProps) {
 	const queryClient = useQueryClient();
 
@@ -241,18 +344,12 @@ function TodoItems({ isList }: TodoListProps) {
 				columns.find((col) => col.name === statusToColumn[todo.status])
 					?.color || "#6B7280",
 		},
-		owner: faker.helpers.arrayElement(users),
 		description: todo.description,
 		originalTodo: todo,
 	}));
 
 	const handleDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
-
-		console.log({
-			active,
-			over,
-		});
 
 		if (!over) {
 			return;
@@ -328,9 +425,25 @@ function TodoItems({ isList }: TodoListProps) {
 													<h2 className="m-0 flex-1 font-medium text-sm">
 														{feature.name}
 													</h2>
-													<button className="cursor-pointer text-foreground bg-transparent hover:bg-accent/50">
-														<Pencil size={14} />
-													</button>
+													<Dialog>
+														<DialogTrigger asChild>
+															<Button
+																variant="link"
+																className="cursor-pointer text-foreground bg-transparent hover:bg-accent/50"
+															>
+																<Pencil size={10} />
+															</Button>
+														</DialogTrigger>
+														<DialogContent>
+															<DialogHeader>
+																<DialogTitle>Edit Todo</DialogTitle>
+																<DialogDescription>
+																	Update your todo item details.
+																</DialogDescription>
+															</DialogHeader>
+															<EditTodoForm todo={feature.originalTodo} />
+														</DialogContent>
+													</Dialog>
 												</div>
 												<p className="m-0 text-muted-foreground text-xs">
 													{feature.description.slice(0, 100)}...
@@ -376,12 +489,25 @@ function TodoItems({ isList }: TodoListProps) {
 										<p className="m-0 flex-1 font-medium text-sm">
 											{feature.name}
 										</p>
-										<Button
-											variant="link"
-											className="cursor-pointer text-foreground bg-transparent hover:bg-accent/50"
-										>
-											<Pencil size={12} />
-										</Button>
+										<Dialog data-no-dnd="true">
+											<DialogTrigger asChild>
+												<Button
+													variant="link"
+													className="cursor-pointer text-foreground bg-transparent hover:bg-accent/50"
+												>
+													<Pencil size={12} />
+												</Button>
+											</DialogTrigger>
+											<DialogContent>
+												<DialogHeader>
+													<DialogTitle>Edit Todo</DialogTitle>
+													<DialogDescription>
+														Update your todo item details.
+													</DialogDescription>
+												</DialogHeader>
+												<EditTodoForm todo={feature.originalTodo} />
+											</DialogContent>
+										</Dialog>
 									</div>
 								</div>
 								{feature.description && (
