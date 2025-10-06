@@ -2,8 +2,14 @@ import { SignupFormData, SignupFormSchema } from "@/lib/definitions/signup";
 import { LoginFormData, LoginFormSchema } from "@/lib/definitions/login";
 import { api } from "@/lib/api";
 
-export async function signup({ name, email, password }: SignupFormData) {
-	const validatedFields = SignupFormSchema.safeParse({
+export async function signup({
+	name,
+	email,
+	password,
+}: Omit<SignupFormData, "confirmPassword">) {
+	const validatedFields = SignupFormSchema.omit({
+		confirmPassword: true,
+	}).safeParse({
 		name,
 		email,
 		password,

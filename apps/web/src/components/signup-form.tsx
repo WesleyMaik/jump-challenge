@@ -28,14 +28,17 @@ import { EyeOff } from "lucide-react";
 import { Eye } from "lucide-react";
 import { useState } from "react";
 import Logo from "@assets/jump.svg";
-import { login } from "@/app/actions/auth";
+import { signup } from "@/app/actions/auth";
 import { SignupFormData, SignupFormSchema } from "@/lib/definitions/signup";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function SignupForm({
 	className,
 	...props
 }: React.ComponentProps<"div">) {
 	const [showPassword, setShowPassword] = useState(false);
+	const router = useRouter();
 
 	const togglePasswordVisibility = () => {
 		setShowPassword(!showPassword);
@@ -50,16 +53,14 @@ export function SignupForm({
 	});
 
 	async function handleSubmitForm(data: SignupFormData) {
-		console.log(data);
+		const { confirmPassword, ...signupData } = data;
 		try {
-			const response = await login(data);
-			if (response.ok) {
-				console.log("Login successful");
-			} else {
-				console.error("Login failed");
-			}
+			await signup(signupData);
+			toast.success("Signup successful");
+			router.push("/login");
 		} catch (error) {
-			console.error("Error logging in:", error);
+			toast.error("Signup failed");
+			console.error("Error signing up:", error);
 		}
 	}
 
@@ -75,7 +76,7 @@ export function SignupForm({
 				</CardHeader>
 				<CardContent>
 					<form onSubmit={handleSubmit(handleSubmitForm)}>
-						<FieldGroup>
+						<FieldGroup className="gap-2">
 							<Field>
 								<FieldLabel htmlFor="name">Name</FieldLabel>
 								<Input
@@ -130,11 +131,40 @@ export function SignupForm({
 								</FieldDescription>
 							</Field>
 							<Field>
+								<div className="flex items-center">
+									<FieldLabel htmlFor="confirmPassword">
+										Confirm Password
+									</FieldLabel>
+								</div>
+								<InputGroup>
+									<InputGroupInput
+										id="confirmPassword"
+										type={showPassword ? "text" : "password"}
+										{...register("confirmPassword")}
+										placeholder="Confirm your password"
+										required
+									/>
+									<InputGroupAddon
+										align="inline-end"
+										className="cursor-pointer"
+									>
+										{showPassword ? (
+											<EyeOff size={20} onClick={togglePasswordVisibility} />
+										) : (
+											<Eye size={20} onClick={togglePasswordVisibility} />
+										)}
+									</InputGroupAddon>
+								</InputGroup>
+								<FieldDescription className="text-red-500">
+									{errors.confirmPassword?.message}
+								</FieldDescription>
+							</Field>
+							<Field>
 								<Button type="submit" className="cursor-pointer">
-									Login
+									Sign Up
 								</Button>
 								<FieldDescription className="text-center">
-									Do you already have an account?{" "}
+									Already have an account?{" "}
 									<a href="/login" className="text-blue-400">
 										Login
 									</a>
