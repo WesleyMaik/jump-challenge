@@ -55,6 +55,9 @@ export class UsersService {
           ...data,
           password: hashedPassword,
         },
+        omit: {
+          password: true,
+        },
       });
       return user;
     } catch (error) {
