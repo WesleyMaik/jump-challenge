@@ -27,7 +27,7 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new BadRequestException('Invalid credentials');
     }
-    const payload = { email: user.email, sub: user.id };
+    const payload = { email: user.email, sub: user.id, role: user.role };
     const accessToken = this.jwtService.sign(payload);
 
     response.cookie('access_token', accessToken, {

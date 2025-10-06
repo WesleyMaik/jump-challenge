@@ -16,6 +16,7 @@ import {
   CurrentUser,
   type CurrentUserData,
 } from '@/common/decorators/current-user.decorator';
+import { ResourceOwner } from '@/common/decorators/resource-owner.decorator';
 
 @Controller('/todos')
 @UseGuards(JwtAuthGuard)
@@ -24,16 +25,6 @@ export class TodosController {
 
   @Get('/')
   async getAll(@CurrentUser() user: CurrentUserData) {
-    try {
-      return await this.todosService.getByUserId(user.id);
-    } catch (error) {
-      console.error(error);
-      return [];
-    }
-  }
-
-  @Get('/me')
-  async getMyTodos(@CurrentUser() user: CurrentUserData) {
     try {
       return await this.todosService.getByUserId(user.id);
     } catch (error) {
@@ -56,6 +47,7 @@ export class TodosController {
   }
 
   @Patch('/:id')
+  @ResourceOwner('id')
   async update(
     @Param('id') id: string,
     @Body() updateTodoDto: Partial<UpdateTodoDto>,
