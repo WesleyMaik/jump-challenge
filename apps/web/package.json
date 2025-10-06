@@ -8,6 +8,7 @@
 		"build": "next build",
 		"start": "next start",
 		"lint": "next lint --max-warnings 0",
+		"test": "echo \"No tests specified\"",
 		"check-types": "tsc --noEmit"
 	},
 	"dependencies": {
