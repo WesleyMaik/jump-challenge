@@ -5,11 +5,11 @@ import {
   Get,
   Param,
   Patch,
-  Post,
+  // Post,
   UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
+// import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user-dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
@@ -50,11 +50,12 @@ export class UsersController {
     return await this.usersService.getById(id);
   }
 
-  @Post('/')
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  async create(@Body() createUserDto: CreateUserDto) {
-    return await this.usersService.create(createUserDto);
-  }
+  // Implemented in AuthController
+  // @Post('/')
+  // @UseGuards(JwtAuthGuard, AdminGuard)
+  // async create(@Body() createUserDto: CreateUserDto) {
+  //   return await this.usersService.create(createUserDto);
+  // }
 
   @Patch('/:id')
   @UseGuards(JwtAuthGuard, OwnerOrAdminGuard)
