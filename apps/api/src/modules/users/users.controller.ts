@@ -66,6 +66,16 @@ export class UsersController {
     return await this.usersService.update(id, updateUserDto);
   }
 
+  @Patch('/me')
+  @UseGuards(JwtAuthGuard)
+  @ResourceOwner('id')
+  async updateMe(
+    @CurrentUser() user: CurrentUserData,
+    @Body() updateUserDto: Partial<UpdateUserDto>,
+  ) {
+    return await this.usersService.update(user.id, updateUserDto);
+  }
+
   @Delete('/:id')
   @UseGuards(JwtAuthGuard, OwnerOrAdminGuard)
   @ResourceOwner('id')
