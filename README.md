@@ -121,13 +121,12 @@ pnpm build --filter=api
 ### Start Production Server
 
 ```bash
-# Start frontend production server
-cd apps/web
+# Start all applications production server
 pnpm start
 
-# Start backend production server
-cd apps/api
-pnpm start:prod
+# Start specific application production server
+pnpm start --filter=web
+pnpm start --filter=api
 ```
 
 ## 🧪 Testing
@@ -140,7 +139,7 @@ pnpm test
 
 # Run tests for specific app
 cd apps/api
-pnpm test              # Unit teststests
+pnpm test              # Unit tests
 pnpm test:cov          # Coverage report
 
 # Watch mode
@@ -176,9 +175,6 @@ When running with Docker Compose, the following services will be available:
 - **Web Application**: http://localhost:3001
 - **API Server**: http://localhost:3000
 - **PostgreSQL Database**: localhost:5432
-- **pgAdmin** (optional): http://localhost:5050
-  - Email: admin@todo.com
-  - Password: admin123
 
 ### Docker Commands
 
@@ -215,21 +211,6 @@ docker compose exec postgres psql -U postgres -d todo_db
 
 # Start with pgAdmin for database management
 docker compose --profile tools up -d
-```
-
-### Development with Docker
-
-For development with hot reloading:
-
-```bash
-# Start development environment
-docker compose -f docker-compose.dev.yml up -d
-
-# View development logs
-docker compose -f docker-compose.dev.yml logs -f
-
-# Stop development environment
-docker compose -f docker-compose.dev.yml down
 ```
 
 ### Environment Variables for Docker
