@@ -80,7 +80,7 @@ export function UserDropdown() {
 				</DropdownMenuLabel>
 				<DropdownMenuSeparator />
 				<DropdownMenuGroup>
-					<DropdownMenuItem className="cursor-pointer">
+					<DropdownMenuItem className="cursor-pointer" disabled>
 						<UserRound />
 						Account
 					</DropdownMenuItem>
