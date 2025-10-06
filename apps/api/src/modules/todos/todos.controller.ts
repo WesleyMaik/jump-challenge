@@ -32,6 +32,16 @@ export class TodosController {
     }
   }
 
+  @Get('/me')
+  async getMyTodos(@CurrentUser() user: CurrentUserData) {
+    try {
+      return await this.todosService.getByUserId(user.id);
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
+  }
+
   @Get('/:id')
   async getById(@Param('id') id: string, @CurrentUser() user: CurrentUserData) {
     return await this.todosService.getByIdAndUserId(id, user.id);

@@ -6,10 +6,16 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user-dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import {
+  CurrentUser,
+  type CurrentUserData,
+} from '@/common/decorators/current-user.decorator';
 
 @Controller('/users')
 export class UsersController {
@@ -24,6 +30,12 @@ export class UsersController {
       console.error(error);
       return [];
     }
+  }
+
+  @Get('/me')
+  @UseGuards(JwtAuthGuard)
+  async getMe(@CurrentUser() user: CurrentUserData) {
+    return await this.usersService.getById(user.id);
   }
 
   @Get('/:id')
