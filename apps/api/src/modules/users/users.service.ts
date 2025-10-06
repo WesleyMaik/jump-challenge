@@ -4,7 +4,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { generateHash } from '@/lib/crypto';
+import { PrismaService } from '@/modules/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user-dto';
 import { Prisma } from '@prisma/client';
@@ -48,8 +49,12 @@ export class UsersService {
 
   async create(data: CreateUserDto) {
     try {
+      const hashedPassword = await generateHash(data.password);
       const user = await this.prisma.user.create({
-        data,
+        data: {
+          ...data,
+          password: hashedPassword,
+        },
       });
       return user;
     } catch (error) {
