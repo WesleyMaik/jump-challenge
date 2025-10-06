@@ -16,7 +16,11 @@ export class UsersService {
 
   async getAll() {
     try {
-      const users = await this.prisma.user.findMany();
+      const users = await this.prisma.user.findMany({
+        omit: {
+          password: true,
+        },
+      });
       return users;
     } catch (error) {
       console.error(error);
@@ -29,6 +33,9 @@ export class UsersService {
       const user = await this.prisma.user.findUnique({
         where: {
           id,
+        },
+        omit: {
+          password: true,
         },
       });
 
@@ -78,6 +85,9 @@ export class UsersService {
           id,
         },
         data,
+        omit: {
+          password: true,
+        },
       });
       return user;
     } catch (error) {
@@ -104,6 +114,9 @@ export class UsersService {
       const user = await this.prisma.user.delete({
         where: {
           id,
+        },
+        omit: {
+          password: true,
         },
       });
 
