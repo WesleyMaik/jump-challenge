@@ -30,12 +30,14 @@ import { Eye } from "lucide-react";
 import { useState } from "react";
 import Logo from "@assets/jump.svg";
 import { login } from "@/app/actions/auth";
+import { useRouter } from "next/navigation";
 
 export function LoginForm({
 	className,
 	...props
 }: React.ComponentProps<"div">) {
 	const [showPassword, setShowPassword] = useState(false);
+	const router = useRouter();
 
 	const togglePasswordVisibility = () => {
 		setShowPassword(!showPassword);
@@ -54,7 +56,7 @@ export function LoginForm({
 		try {
 			const response = await login(data);
 			if (response.ok) {
-				console.log("Login successful");
+				router.push("/app");
 			} else {
 				console.error("Login failed");
 			}

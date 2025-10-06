@@ -177,7 +177,7 @@ describe('AuthService', () => {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           expires: expect.any(Date),
-          sameSite: 'strict',
+          sameSite: 'lax',
         },
       );
     });

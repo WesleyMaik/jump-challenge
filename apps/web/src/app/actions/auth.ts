@@ -1,5 +1,6 @@
 import { SignupFormData, SignupFormSchema } from "@/lib/definitions/signup";
 import { LoginFormData, LoginFormSchema } from "@/lib/definitions/login";
+import { api } from "@/lib/api";
 
 export async function signup({ name, email, password }: SignupFormData) {
 	const validatedFields = SignupFormSchema.safeParse({
@@ -12,12 +13,11 @@ export async function signup({ name, email, password }: SignupFormData) {
 		throw new Error("Invalid signup data.");
 	}
 
-	return await fetch("/api/auth/signup", {
+	return await api("/auth/signup", {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
 		},
-		credentials: "include",
 		body: JSON.stringify(validatedFields.data),
 	});
 }
@@ -33,12 +33,11 @@ export async function login({ email, password }: LoginFormData) {
 		throw new Error("Invalid login data.");
 	}
 
-	return await fetch("/api/auth/login", {
+	return await api("/auth/login", {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
 		},
-		credentials: "include",
 		body: JSON.stringify(validatedFields.data),
 	});
 }
