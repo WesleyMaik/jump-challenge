@@ -13,8 +13,4 @@ export class CreateTodoDto {
   @IsOptional()
   @IsEnum(Status)
   status?: Status;
-
-  @IsNotEmpty()
-  @IsString()
-  userId: string;
 }

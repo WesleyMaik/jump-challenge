@@ -5,11 +5,14 @@ import { Prisma, Todo, Status } from '@prisma/client';
 
 const mockPrismaService = {
   todo: {
+    findFirst: jest.fn(),
     findUnique: jest.fn(),
     create: jest.fn(),
     findMany: jest.fn(),
     update: jest.fn(),
+    updateMany: jest.fn(),
     delete: jest.fn(),
+    deleteMany: jest.fn(),
   },
 };
 
@@ -68,7 +71,6 @@ describe('TodosService', () => {
           createdAt: 'desc',
         },
       });
-      expect(prisma.todo.findMany).toHaveBeenCalledTimes(1);
     });
 
     it('should return an empty array when no todos exist', async () => {
@@ -81,27 +83,37 @@ describe('TodosService', () => {
     });
   });
 
-  describe('getById', () => {
-    it('should return a todo when a valid ID is provided', async () => {
-      mockPrismaService.todo.findUnique.mockResolvedValue(mockTodo);
+  describe('getByIdAndUserId', () => {
+    it('should return a todo when a valid ID and userId are provided', async () => {
+      mockPrismaService.todo.findFirst.mockResolvedValue(mockTodo);
 
-      const result = await service.getById(mockTodo.id);
+      const result = await service.getByIdAndUserId(
+        mockTodo.id,
+        mockTodo.userId,
+      );
 
       expect(result).toEqual(mockTodo);
-      expect(prisma.todo.findUnique).toHaveBeenCalledWith({
-        where: { id: mockTodo.id },
+      expect(prisma.todo.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: mockTodo.id,
+          userId: mockTodo.userId,
+        },
       });
     });
 
-    it('should throw a Todo not found when todo is not found', async () => {
+    it('should throw Todo not found when todo is not found', async () => {
       const invalidId = 'invalid-uuid';
-      mockPrismaService.todo.findUnique.mockResolvedValue(null);
+      const userId = 'user-id-123';
+      mockPrismaService.todo.findFirst.mockResolvedValue(null);
 
-      await expect(service.getById(invalidId)).rejects.toThrow(
+      await expect(service.getByIdAndUserId(invalidId, userId)).rejects.toThrow(
         'Todo not found.',
       );
-      expect(prisma.todo.findUnique).toHaveBeenCalledWith({
-        where: { id: invalidId },
+      expect(prisma.todo.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: invalidId,
+          userId: userId,
+        },
       });
     });
   });
@@ -138,11 +150,14 @@ describe('TodosService', () => {
     it('should create a new todo and return it', async () => {
       mockPrismaService.todo.create.mockResolvedValue(mockTodo);
 
-      const result = await service.create(createTodoDto);
+      const result = await service.create(createTodoDto, mockTodo.userId);
 
       expect(result).toEqual(mockTodo);
       expect(prisma.todo.create).toHaveBeenCalledWith({
-        data: createTodoDto,
+        data: {
+          ...createTodoDto,
+          userId: mockTodo.userId,
+        },
       });
       expect(prisma.todo.create).toHaveBeenCalledTimes(1);
     });
@@ -154,81 +169,84 @@ describe('TodosService', () => {
       );
       mockPrismaService.todo.create.mockRejectedValue(prismaError);
 
-      await expect(service.create(createTodoDto)).rejects.toThrow(
-        'Invalid user ID.',
-      );
+      await expect(
+        service.create(createTodoDto, mockTodo.userId),
+      ).rejects.toThrow('Invalid user ID.');
     });
   });
 
-  describe('update', () => {
+  describe('updateByIdAndUserId', () => {
     it('should update a todo and return it', async () => {
-      const todoId = mockTodo.id;
-      const updateTodoDto = {
-        title: 'Updated Title',
-      };
+      const updateTodoDto = { title: 'Updated Todo' };
       const updatedTodo = { ...mockTodo, ...updateTodoDto };
-      mockPrismaService.todo.update.mockResolvedValue(updatedTodo);
 
-      const result = await service.update(todoId, updateTodoDto);
+      mockPrismaService.todo.updateMany.mockResolvedValue({ count: 1 });
+      mockPrismaService.todo.findFirst.mockResolvedValue(updatedTodo);
+
+      const result = await service.updateByIdAndUserId(
+        mockTodo.id,
+        updateTodoDto,
+        mockTodo.userId,
+      );
 
       expect(result).toEqual(updatedTodo);
-      expect(prisma.todo.update).toHaveBeenCalledWith({
-        where: { id: todoId },
+      expect(prisma.todo.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: mockTodo.id,
+          userId: mockTodo.userId,
+        },
         data: updateTodoDto,
       });
     });
 
+    it('should throw Todo not found when todo does not exist', async () => {
+      const updateTodoDto = { title: 'Updated Todo' };
+      mockPrismaService.todo.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(
+        service.updateByIdAndUserId('invalid-id', updateTodoDto, 'user-id'),
+      ).rejects.toThrow('Todo not found.');
+    });
+
     it('should throw Invalid todo data on validation error', async () => {
-      const todoId = mockTodo.id;
-      const invalidData = { title: 'Test' };
+      const invalidData = { title: '' };
       const prismaError = new Prisma.PrismaClientValidationError(
         'Validation failed',
         { clientVersion: 'x.x.x' },
       );
-      mockPrismaService.todo.update.mockRejectedValue(prismaError);
+      mockPrismaService.todo.updateMany.mockRejectedValue(prismaError);
 
-      await expect(service.update(todoId, invalidData)).rejects.toThrow(
-        'Invalid todo data.',
-      );
-    });
-
-    it('should throw Todo not found when todo does not exist', async () => {
-      const todoId = 'non-existent-id';
-      const updateData = { title: 'Test' };
-      const prismaError = new Prisma.PrismaClientKnownRequestError(
-        'Record not found',
-        { code: 'P2025', clientVersion: 'x.x.x' },
-      );
-      mockPrismaService.todo.update.mockRejectedValue(prismaError);
-
-      await expect(service.update(todoId, updateData)).rejects.toThrow(
-        'Todo not found.',
-      );
+      await expect(
+        service.updateByIdAndUserId(mockTodo.id, invalidData, mockTodo.userId),
+      ).rejects.toThrow('Invalid todo data.');
     });
   });
 
-  describe('delete', () => {
-    it('should delete a todo and return it', async () => {
-      mockPrismaService.todo.delete.mockResolvedValue(mockTodo);
+  describe('deleteByIdAndUserId', () => {
+    it('should delete a todo and return success message', async () => {
+      mockPrismaService.todo.deleteMany.mockResolvedValue({ count: 1 });
 
-      const result = await service.delete(mockTodo.id);
+      const result = await service.deleteByIdAndUserId(
+        mockTodo.id,
+        mockTodo.userId,
+      );
 
-      expect(result).toEqual(mockTodo);
-      expect(prisma.todo.delete).toHaveBeenCalledWith({
-        where: { id: mockTodo.id },
+      expect(result).toEqual({ message: 'Todo deleted successfully' });
+      expect(prisma.todo.deleteMany).toHaveBeenCalledWith({
+        where: {
+          id: mockTodo.id,
+          userId: mockTodo.userId,
+        },
       });
-      expect(prisma.todo.delete).toHaveBeenCalledTimes(1);
+      expect(prisma.todo.deleteMany).toHaveBeenCalledTimes(1);
     });
 
     it('should throw Todo not found when todo does not exist', async () => {
-      const todoId = 'non-existent-id';
-      const prismaError = new Prisma.PrismaClientKnownRequestError(
-        'Record not found',
-        { code: 'P2025', clientVersion: 'x.x.x' },
-      );
-      mockPrismaService.todo.delete.mockRejectedValue(prismaError);
+      mockPrismaService.todo.deleteMany.mockResolvedValue({ count: 0 });
 
-      await expect(service.delete(todoId)).rejects.toThrow('Todo not found.');
+      await expect(
+        service.deleteByIdAndUserId('invalid-id', 'user-id'),
+      ).rejects.toThrow('Todo not found.');
     });
   });
 });

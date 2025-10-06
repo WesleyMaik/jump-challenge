@@ -26,11 +26,12 @@ export class TodosService {
     }
   }
 
-  async getById(id: string) {
+  async getByIdAndUserId(id: string, userId: string) {
     try {
-      const todo = await this.prisma.todo.findUnique({
+      const todo = await this.prisma.todo.findFirst({
         where: {
           id,
+          userId,
         },
       });
 
@@ -66,10 +67,13 @@ export class TodosService {
     }
   }
 
-  async create(data: CreateTodoDto) {
+  async create(data: CreateTodoDto, userId: string) {
     try {
       const todo = await this.prisma.todo.create({
-        data,
+        data: {
+          ...data,
+          userId,
+        },
       });
       return todo;
     } catch (error) {
@@ -82,15 +86,26 @@ export class TodosService {
     }
   }
 
-  async update(id: string, data: Partial<UpdateTodoDto>) {
+  async updateByIdAndUserId(
+    id: string,
+    data: Partial<UpdateTodoDto>,
+    userId: string,
+  ) {
     try {
-      const todo = await this.prisma.todo.update({
+      const todo = await this.prisma.todo.updateMany({
         where: {
           id,
+          userId,
         },
         data,
       });
-      return todo;
+
+      if (todo.count === 0) {
+        throw new NotFoundException('Todo not found.');
+      }
+
+      // Retorna o todo atualizado
+      return await this.getByIdAndUserId(id, userId);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientValidationError) {
         throw new BadRequestException('Invalid todo data.');
@@ -106,19 +121,20 @@ export class TodosService {
     }
   }
 
-  async delete(id: string) {
+  async deleteByIdAndUserId(id: string, userId: string) {
     try {
-      const todo = await this.prisma.todo.delete({
+      const todo = await this.prisma.todo.deleteMany({
         where: {
           id,
+          userId,
         },
       });
 
-      if (!todo) {
+      if (todo.count === 0) {
         throw new NotFoundException('Todo not found.');
       }
 
-      return todo;
+      return { message: 'Todo deleted successfully' };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
