@@ -18,12 +18,11 @@ const mockPrismaService = {
   },
 };
 
-const mockUser: User = {
+const mockUser: Omit<User, 'password'> = {
   id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
   email: 'john.doe@email.com',
   name: 'John Doe',
   role: 'CLIENT',
-  password: 'hashedpassword123',
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -90,6 +89,7 @@ describe('UsersService', () => {
       expect(result).toEqual(mockUser);
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: mockUser.id },
+        omit: { password: true },
       });
     });
 
@@ -102,6 +102,7 @@ describe('UsersService', () => {
       );
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: invalidId },
+        omit: { password: true },
       });
     });
   });
@@ -121,6 +122,7 @@ describe('UsersService', () => {
           ...createUserDto,
           password: hashedPassword,
         },
+        omit: { password: true },
       });
       expect(prisma.user.create).toHaveBeenCalledTimes(1);
     });
@@ -156,6 +158,7 @@ describe('UsersService', () => {
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id: userId },
         data: updateUserDto,
+        omit: { password: true },
       });
     });
 
@@ -211,6 +214,7 @@ describe('UsersService', () => {
       expect(result).toEqual(mockUser);
       expect(prisma.user.delete).toHaveBeenCalledWith({
         where: { id: mockUser.id },
+        omit: { password: true },
       });
       expect(prisma.user.delete).toHaveBeenCalledTimes(1);
     });
