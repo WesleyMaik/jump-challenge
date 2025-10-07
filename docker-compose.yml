@@ -3,9 +3,9 @@ services:
     image: postgres:13-alpine
     container_name: todo-db
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: todo
+      POSTGRES_DB: todo_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
     ports:
       - "5432:5432"
     volumes:
@@ -21,8 +21,8 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_URL: postgresql://user:password@db:5432/todo
-      JWT_SECRET_KEY: your-secret-key
+      DATABASE_URL: postgresql://postgres:postgres123@db:5432/todo_db
+      JWT_SECRET_KEY: your-super-secret-jwt-key-change-in-production
 
   web:
     build:
@@ -33,6 +33,8 @@ services:
       - "3001:3001"
     depends_on:
       - api
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000
 
 volumes:
   postgres_data:
