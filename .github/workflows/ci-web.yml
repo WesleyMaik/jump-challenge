@@ -3,28 +3,46 @@ name: CI Web
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+
   pull_request:
     branches: [ main ]
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Use Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
-    - name: Install Dependencies
-      run: npm install
-      working-directory: ./apps/web
-    - name: Build
-      run: npm run build
-      working-directory: ./apps/web
-    - name: Test
-      run: npm run test
-      working-directory: ./apps/web
-    - name: Lint
-      run: npm run lint
-      working-directory: ./apps/web
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+        working-directory: ./apps/web
+
+      - name: Lint
+        run: pnpm lint
+        working-directory: ./apps/web
+
+      - name: Test
+        run: pnpm test
+        working-directory: ./apps/web
