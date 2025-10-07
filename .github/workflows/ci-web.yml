@@ -3,15 +3,9 @@ name: CI Web
 on:
   push:
     branches: [main]
-    paths:
-      - "apps/web/**"
-      - "packages/**"
 
   pull_request:
-    branches: [main]
-    paths:
-      - "apps/web/**"
-      - "packages/**"
+    types: [opened, synchronize]
 
 jobs:
   build:

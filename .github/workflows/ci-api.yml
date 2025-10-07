@@ -3,15 +3,9 @@ name: CI API
 on:
   push:
     branches: [main]
-    paths:
-      - "apps/api/**"
-      - "packages/**"
 
   pull_request:
-    branches: [main]
-    paths:
-      - "apps/api/**"
-      - "packages/**"
+    types: [opened, synchronize]
 
 jobs:
   build:
