@@ -141,7 +141,6 @@ export class TodosService {
           throw new NotFoundException('Todo not found.');
         }
       }
-      console.error(error);
       throw error;
     }
   }

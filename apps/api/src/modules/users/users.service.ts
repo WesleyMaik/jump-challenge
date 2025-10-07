@@ -72,7 +72,7 @@ export class UsersService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new ConflictException('Email already in use.');
+        throw new ConflictException('User with this email already exists.');
       }
       throw error;
     }
@@ -101,7 +101,7 @@ export class UsersService {
         }
 
         if (error.code === 'P2002') {
-          throw new ConflictException('Email already in use.');
+          throw new ConflictException('Email already in use by another user.');
         }
       }
 
