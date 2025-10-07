@@ -97,7 +97,7 @@ describe('UsersService', () => {
       const invalidId = 'invalid-uuid';
       mockPrismaService.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.getById(invalidId)).rejects.toThrow(
+      await expect(() => service.getById(invalidId)).rejects.toThrow(
         'User not found.',
       );
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
@@ -137,8 +137,8 @@ describe('UsersService', () => {
       );
       mockPrismaService.user.create.mockRejectedValue(prismaError);
 
-      await expect(service.create(createUserDto)).rejects.toThrow(
-        'Email already in use.',
+      await expect(() => service.create(createUserDto)).rejects.toThrow(
+        'User with this email already exists.',
       );
     });
   });
@@ -177,31 +177,27 @@ describe('UsersService', () => {
     });
 
     it('should throw User not found when user does not exist', async () => {
-      const userId = 'non-existent-id';
-      const updateData = { name: 'Test' };
       const prismaError = new Prisma.PrismaClientKnownRequestError(
         'Record not found',
         { code: 'P2025', clientVersion: 'x.x.x' },
       );
       mockPrismaService.user.update.mockRejectedValue(prismaError);
 
-      await expect(service.update(userId, updateData)).rejects.toThrow(
-        'User not found.',
-      );
+      await expect(() =>
+        service.update('non-existent-id', { name: 'Jane Doe' }),
+      ).rejects.toThrow('User not found.');
     });
 
-    it('should throw Email already in use when email is already in use', async () => {
-      const userId = mockUser.id;
-      const updateData = { name: 'Doe John' };
+    it('should throw an error if the email is already in use by another user', async () => {
       const prismaError = new Prisma.PrismaClientKnownRequestError(
         'Unique constraint failed',
         { code: 'P2002', clientVersion: 'x.x.x' },
       );
       mockPrismaService.user.update.mockRejectedValue(prismaError);
 
-      await expect(service.update(userId, updateData)).rejects.toThrow(
-        'Email already in use.',
-      );
+      await expect(() =>
+        service.update(mockUser.id, { email: 'existing@email.com' }),
+      ).rejects.toThrow('Email already in use by another user.');
     });
   });
 
@@ -227,7 +223,9 @@ describe('UsersService', () => {
       );
       mockPrismaService.user.delete.mockRejectedValue(prismaError);
 
-      await expect(service.delete(userId)).rejects.toThrow('User not found.');
+      await expect(() => service.delete(userId)).rejects.toThrow(
+        'User not found.',
+      );
     });
   });
 });

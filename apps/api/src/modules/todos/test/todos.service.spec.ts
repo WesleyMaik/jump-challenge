@@ -106,9 +106,9 @@ describe('TodosService', () => {
       const userId = 'user-id-123';
       mockPrismaService.todo.findFirst.mockResolvedValue(null);
 
-      await expect(service.getByIdAndUserId(invalidId, userId)).rejects.toThrow(
-        'Todo not found.',
-      );
+      await expect(() =>
+        service.getByIdAndUserId(invalidId, userId),
+      ).rejects.toThrow('Todo not found.');
       expect(prisma.todo.findFirst).toHaveBeenCalledWith({
         where: {
           id: invalidId,
@@ -169,7 +169,7 @@ describe('TodosService', () => {
       );
       mockPrismaService.todo.create.mockRejectedValue(prismaError);
 
-      await expect(
+      await expect(() =>
         service.create(createTodoDto, mockTodo.userId),
       ).rejects.toThrow('Invalid user ID.');
     });
@@ -203,7 +203,7 @@ describe('TodosService', () => {
       const updateTodoDto = { title: 'Updated Todo' };
       mockPrismaService.todo.updateMany.mockResolvedValue({ count: 0 });
 
-      await expect(
+      await expect(() =>
         service.updateByIdAndUserId('invalid-id', updateTodoDto, 'user-id'),
       ).rejects.toThrow('Todo not found.');
     });
@@ -216,7 +216,7 @@ describe('TodosService', () => {
       );
       mockPrismaService.todo.updateMany.mockRejectedValue(prismaError);
 
-      await expect(
+      await expect(() =>
         service.updateByIdAndUserId(mockTodo.id, invalidData, mockTodo.userId),
       ).rejects.toThrow('Invalid todo data.');
     });
@@ -244,7 +244,7 @@ describe('TodosService', () => {
     it('should throw Todo not found when todo does not exist', async () => {
       mockPrismaService.todo.deleteMany.mockResolvedValue({ count: 0 });
 
-      await expect(
+      await expect(() =>
         service.deleteByIdAndUserId('invalid-id', 'user-id'),
       ).rejects.toThrow('Todo not found.');
     });
