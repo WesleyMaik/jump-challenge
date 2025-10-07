@@ -3,10 +3,8 @@
 import {
 	DndContext,
 	type DragEndEvent,
-	KeyboardSensor,
 	MouseSensor,
 	rectIntersection,
-	TouchSensor,
 	useDraggable,
 	useDroppable,
 	useSensor,

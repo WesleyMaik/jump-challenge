@@ -53,6 +53,7 @@ export function SignupForm({
 	});
 
 	async function handleSubmitForm(data: SignupFormData) {
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const { confirmPassword, ...signupData } = data;
 		try {
 			await signup(signupData);
