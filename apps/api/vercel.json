@@ -1,7 +1,7 @@
 {
   "version": 2,
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm prisma generate --workspace api && pnpm run build",
+  "buildCommand": "pnpm prisma generate && pnpm build",
   "builds": [
     {
       "src": "src/main.ts",
