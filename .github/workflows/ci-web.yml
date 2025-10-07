@@ -2,16 +2,16 @@ name: CI Web
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'apps/web/**'
-      - 'packages/**'
+      - "apps/web/**"
+      - "packages/**"
 
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'apps/web/**'
-      - 'packages/**'
+      - "apps/web/**"
+      - "packages/**"
 
 jobs:
   build:
@@ -23,14 +23,12 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install
